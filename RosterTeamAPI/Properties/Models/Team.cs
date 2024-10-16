@@ -8,20 +8,20 @@ namespace RosterTeamAPI.Models
     public int Id { get; set; }
     [Required]
     public string Name { get; set; }
-    public List<Employee> Employees { get; set; } = new List<Employee>();
-  
+    public List<TeamEmployee> TeamEmployees { get; set; } = new List<TeamEmployee>();
+
   }
 }
 
-//post service
-//Delete service
-//get all service
-//add employee
-//Delete employee
-//Get All employee
+//post service .
+//Delete service .
+//get all service .
+//add employee . 
+//Delete employee .
+//Get All employee .
 //Get emplyee grp by team 
 
 //overtime 
 //task status
-//assign task to employee
+//assign task to employee .
 //assign mutliple employee to mutiple team

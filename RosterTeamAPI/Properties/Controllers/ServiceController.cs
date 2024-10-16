@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using RosterTeamAPI.DTOs;
 using RosterTeamAPI.Models;
 using RosterTeamAPI.Repositories;
@@ -51,15 +52,45 @@ namespace RosterTeamAPI.Controllers
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteService(int id)
     {
-      var service = await _ServiceRepository.GetByIdAsync(id);
-      if (service == null)
+      try
       {
-        return NotFound($"Service with ID {id} not found.");
-      }
+        var service = await _ServiceRepository.GetByIdAsync(id);
+        if (service == null)
+        {
+          return NotFound($"Service with ID {id} not found.");
+        }
 
-      await _ServiceRepository.DeleteAsync(service);
-      return Ok($"Service with ID {id} has been deleted.");
+        var subtasks = await _SubtaskRepository.GetSubTasksByParentTaskIdAsync(id);
+        foreach (var subTask in subtasks)
+        {
+          var employee = await _EmployeeRepository.GetByIdAsync(subTask.EmployeeId);
+          if (employee != null)
+          {
+            // Update employee work hours
+            employee.UsedWorkHoursDay -= subTask.TotalHoursScheduled;
+            employee.UsedWorkHoursWeek -= subTask.TotalHoursScheduled;
+          }
+          else
+          {
+            return NotFound($"Employee with ID {subTask.EmployeeId} not found.");
+          }
+        }
+
+        // Save changes to employee hours
+        await _EmployeeRepository.SaveAsync();
+
+        // Delete the service
+        await _ServiceRepository.DeleteAsync(service);
+        await _ServiceRepository.SaveAsync();
+
+        return Ok($"Service with ID {id} has been deleted.");
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"Internal server error: {ex.Message}");
+      }
     }
+
 
     [HttpPost("assign")]
     public async Task<IActionResult> AssignTaskToEmployee(int serviceId, int employeeId)
@@ -78,9 +109,24 @@ namespace RosterTeamAPI.Controllers
         }
 
         double remainingTaskTime = service.TotalHoursScheduled - (service.HoursAssigned ?? 0);
-        double availableHours = employee.TotalWorkHoursDay - employee.UsedWorkHoursDay;
+        double availableHoursDay = employee.TotalWorkHoursDay - employee.UsedWorkHoursDay;
+        double availableHoursWeek = employee.TotalWorkHoursWeek - employee.UsedWorkHoursWeek;
+        double availableHours = Math.Min(availableHoursDay, availableHoursWeek);
+        
+        if (availableHoursDay == 0 )
+        {
+          
+          return BadRequest("Employee has completed daily hours");
+          
+        }
+        else if (availableHoursWeek == 0)
+        {
 
-        if (availableHours < remainingTaskTime)
+          return BadRequest("Employee has completed Weekly hours");
+
+        }
+
+        else if (availableHours < remainingTaskTime)
         {
           var subTask = new SubTask
           {
@@ -94,7 +140,8 @@ namespace RosterTeamAPI.Controllers
           await _SubtaskRepository.AddAsync(subTask);
           await _SubtaskRepository.SaveAsync();
           service.HoursAssigned = (service.HoursAssigned ?? 0) + availableHours;
-          employee.UsedWorkHoursDay = employee.TotalWorkHoursDay;
+          employee.UsedWorkHoursDay += availableHours;
+          employee.UsedWorkHoursWeek += availableHours;
         }
         else
         {
@@ -111,6 +158,7 @@ namespace RosterTeamAPI.Controllers
           await _SubtaskRepository.SaveAsync();
           service.HoursAssigned = service.TotalHoursScheduled;
           employee.UsedWorkHoursDay += remainingTaskTime;
+          employee.UsedWorkHoursWeek += remainingTaskTime;
         }
 
         await _ServiceRepository.SaveAsync();
@@ -135,6 +183,26 @@ namespace RosterTeamAPI.Controllers
         if (subTasks == null || !subTasks.Any())
         {
           return NotFound("No subtasks found for the given parent task ID.");
+        }
+
+        return Ok(subTasks);
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"Internal server error: {ex.Message}");
+      }
+    }
+
+    [HttpGet("subtasks/TaskOfEmployee/{employeeId}")]
+    public async Task<IActionResult> GetSubTasksByEmployeeId(int employeeId)
+    {
+      try
+      {
+        var subTasks = await _SubtaskRepository.GetSubTasksByEmployeeIdAsync(employeeId);
+
+        if (subTasks == null || !subTasks.Any())
+        {
+          return NotFound("No subtasks found for the given Employee  ID.");
         }
 
         return Ok(subTasks);

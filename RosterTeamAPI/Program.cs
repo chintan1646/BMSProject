@@ -42,3 +42,8 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
+// "ConnectionStrings": {
+//     "DefaultConnection": "Host=bmspostgres.postgres.database.azure.com;Port=5432;Database=Api_TestDB;Username=postgresqladmin;Password=bms@12345;Ssl Mode=Require"
+// }

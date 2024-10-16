@@ -11,15 +11,20 @@ namespace RosterTeamAPI.Controllers
   [ApiController]
   public class EmployeeController : ControllerBase
   {
+    private readonly IRepository<Service> _ServiceRepository;
     private readonly IRepository<Employee> _EmployeeRepository;
+    private readonly IRepository<SubTask> _SubtaskRepository;
     private readonly IMapper _mapper;
-    public EmployeeController(IRepository<Employee> EmployeeRepository, IMapper mapper)
+    public EmployeeController(IRepository<Service> ServiceRepository, IMapper mapper,
+    IRepository<Employee> EmployeeRepository, IRepository<SubTask> SubtaskRepository)
     {
+      _ServiceRepository = ServiceRepository;
       _EmployeeRepository = EmployeeRepository;
+      _SubtaskRepository = SubtaskRepository;
       _mapper = mapper;
     }
 
-    
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEmployeeById(int id)
     {
@@ -70,6 +75,45 @@ namespace RosterTeamAPI.Controllers
       // Construct the URL to match where the files are stored
       return $"/uploads/{imageFileName}";
     }
+
+
+    // Delete Employee
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteEmployee(int id)
+    {
+      try
+      {
+        var employee = await _EmployeeRepository.GetByIdAsync(id);
+        if (employee == null)
+        {
+          return NotFound($"Employee with ID {id} not found.");
+        }
+
+        // Load subtasks for the employee
+        var subtasks = await  _SubtaskRepository.GetSubTasksByEmployeeIdAsync(id);
+        foreach (var subTask in subtasks)
+        {
+          var serviceId = subTask.ParentTaskId;
+          var service = await _ServiceRepository.GetByIdAsync(serviceId);
+          if (service != null)
+          {
+            // Update service hours
+            service.HoursAssigned -= subTask.TotalHoursScheduled;
+          }
+        }
+
+        await _ServiceRepository.SaveAsync();
+        await _EmployeeRepository.DeleteAsync(employee);
+        await _EmployeeRepository.SaveAsync();
+
+        return Ok($"Employee with ID {id} and their subtasks have been deleted.");
+      }
+      catch (Exception ex)
+      {
+        return StatusCode(500, $"Internal server error: {ex.Message}");
+      }
+    }
+
 
   }
 }

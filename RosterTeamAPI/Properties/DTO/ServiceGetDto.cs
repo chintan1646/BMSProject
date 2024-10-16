@@ -9,6 +9,7 @@ namespace RosterTeamAPI.DTOs
   {
  
     public int Id { get; set; }
+    public double TotalHoursScheduled { get; set; }
     [Required]
     public string ServiceToBePerformed { get; set; }
     [Required]

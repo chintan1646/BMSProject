@@ -12,12 +12,10 @@ namespace RosterTeamAPI.Models
     [Url]
     public string ProfilePicture { get; set; }
     // public string PhoneNo { get; set; }
-    public int? TeamId { get; set; }
-    public Team Team { get; set; }
     [Required]
     public double TotalWorkHoursDay { get; set; }
     [Required]
-    public double UsedWorkHoursDay { get; set; }
+    public double UsedWorkHoursDay { get; set; } 
     [Required]
     public double TotalWorkHoursWeek { get; set; }
     [Required]
@@ -25,6 +23,8 @@ namespace RosterTeamAPI.Models
    
     public double? OverTimeHours { get; set; }
     public List<SubTask> SubTasks { get; set; } = new List<SubTask>();
+
+    public List<TeamEmployee> TeamEmployees { get; set; } = new List<TeamEmployee>();
   }
 }
 

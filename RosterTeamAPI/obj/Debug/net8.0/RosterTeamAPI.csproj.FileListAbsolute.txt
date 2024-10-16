@@ -131,3 +131,4 @@
 /Users/pulkitkhandelwal/Desktop/projectrepo/BMSProject/RosterTeamAPI/bin/Debug/net8.0/Serilog.Sinks.Console.dll
 /Users/pulkitkhandelwal/Desktop/projectrepo/BMSProject/RosterTeamAPI/bin/Debug/net8.0/Serilog.Sinks.Debug.dll
 /Users/pulkitkhandelwal/Desktop/projectrepo/BMSProject/RosterTeamAPI/bin/Debug/net8.0/Serilog.Sinks.File.dll
+/Users/pulkitkhandelwal/Desktop/projectrepo/BMSProject/RosterTeamAPI/obj/Debug/net8.0/RosterTeamAPI.sourcelink.json
